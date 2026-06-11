@@ -64,7 +64,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>io.qameta.allure.testng.AllureTestNg</value>
+                            <value>listeners.AllureListener</value>
                         </property>
                     </properties>
                 </configuration>
