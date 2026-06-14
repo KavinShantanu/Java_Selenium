@@ -5,9 +5,9 @@ import io.qameta.allure.Allure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LogRecorder {
+public class Report {
     //initialize the SLF4j logger
-    private static final Logger log = LoggerFactory.getLogger(LogRecorder.class);
+    private static final Logger log = LoggerFactory.getLogger(Report.class);
 
     public static void info(String message) {
         log.info(message);

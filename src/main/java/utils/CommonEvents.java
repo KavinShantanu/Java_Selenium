@@ -3,9 +3,10 @@ package utils;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.FluentWait;
+import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.beans.Visibility;
+import org.openqa.selenium.JavascriptExecutor;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.Properties;
@@ -13,17 +14,17 @@ import java.util.Properties;
 
 public class CommonEvents {
     private final WebDriver driver;
-    private final WebDriverWait wait;
-
+    private final WebDriverWait driverWait;
+    private final int timeoutInSeconds;
 
     //constructor
     public CommonEvents(WebDriver browserDriver) {
         this.driver = browserDriver;
 
         Properties prop = ConfigReader.fetchProperties();
-        int timeoutInSeconds = Integer.parseInt(prop.getProperty("timeout"));
+        timeoutInSeconds = Integer.parseInt(prop.getProperty("timeout"));
 
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
+        this.driverWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutInSeconds));
 
     }
 
@@ -31,35 +32,44 @@ public class CommonEvents {
         try {
             byte[] image = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
             Allure.addAttachment(screenshotName, new ByteArrayInputStream(image));
-            LogRecorder.debug("Screenshot attached: " + screenshotName);
+            Report.debug("Screenshot attached: " + screenshotName);
         } catch (Exception e) {
-            LogRecorder.error("Failed to capture and attach screenshot", e);
+            Report.error("Failed to capture and attach screenshot", e);
         }
     }
 
     public WebElement getElement(By locator) {
         try {
-            return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+            return driverWait.until(ExpectedConditions.visibilityOfElementLocated(locator));
         } catch (TimeoutException e) {
-            LogRecorder.error("Timeout reached! Element not visible: " + locator.toString(), e);
+            Report.error("Timeout reached! Element not visible: " + locator.toString(), e);
             attachScreenshotToAllure("Failure - Element Not Visible");
             throw e;
         }
     }
 
 
-    public void clickElement(By locator, String elementName, boolean screenshot) {
+    public void clickElement(By locator, String elementName) {
         try {
-            wait.until(ExpectedConditions.elementToBeClickable(locator));
+            driverWait.until(ExpectedConditions.elementToBeClickable(locator));
             getElement(locator).click();
-            LogRecorder.info("Successfully clicked on: " + elementName);
+            Report.info("Successfully clicked on: " + elementName);
 
-            // Evaluates your true/false requirement condition cleanly
-            if (screenshot) {
-                attachScreenshotToAllure("Snapshot after clicking " + elementName);
-            }
         } catch (Exception e) {
-            LogRecorder.error("Failed to click on element: " + elementName, e);
+            Report.error("Failed to click on element: " + elementName, e);
+            throw e;
+        }
+    }
+
+    public void jsClick(By locator, String elementName) {
+        try {
+            JavascriptExecutor jse = (JavascriptExecutor) driver;
+            jse.executeScript("argument[0].click()",getElement(locator));
+
+        }
+        catch (Exception e)
+        {
+            Report.error("Failed to click on element: " + elementName, e);
             throw e;
         }
     }
@@ -68,13 +78,39 @@ public class CommonEvents {
         try {
             WebElement content = getElement(locator);
             content.sendKeys(text);
-            LogRecorder.info("text successfully typed into field:" + elementName);
+            Report.info("text successfully typed into field:" + elementName);
+            if (screenshot) {
+                attachScreenshotToAllure("Snapshot after entering the text " + elementName);
+            }
         } catch (Exception e) {
-            LogRecorder.error("Failed to add the text into the field:" + elementName, e);
+            Report.error("Failed to add the text into the field:" + elementName, e);
             throw e;
         }
 
     }
 
-}
+    public WebElement fluentWaitForElement(By locator, int polling) {
+        Wait<WebDriver> fluent = new FluentWait<>(driver)
+                .withTimeout(Duration.ofSeconds(timeoutInSeconds))
+                .pollingEvery(Duration.ofMillis(polling))
+                .ignoring(NoSuchElementException.class)
+                .ignoring(StaleElementReferenceException.class);
 
+        try {
+            return fluent.until(_ -> {
+                    WebElement element = driver.findElement(locator);
+                    if (element.isDisplayed() && element.isEnabled()) {
+                        return element;
+                    }
+                    return null;
+                });
+
+        } catch (Exception e) {
+            Report.error("Fluent Wait timeout broken! Element failed to find"
+                    + timeoutInSeconds + " seconds: " + locator.toString(), e);
+            throw e;
+        }
+
+
+    }
+}
