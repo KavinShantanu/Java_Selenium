@@ -2,10 +2,7 @@ package utils;
 
 import io.qameta.allure.Allure;
 import org.openqa.selenium.*;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.FluentWait;
-import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.*;
 import org.openqa.selenium.JavascriptExecutor;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
@@ -64,7 +61,7 @@ public class CommonEvents {
     public void jsClick(By locator, String elementName) {
         try {
             JavascriptExecutor jse = (JavascriptExecutor) driver;
-            jse.executeScript("argument[0].click()",getElement(locator));
+            jse.executeScript("arguments[0].click()",getElement(locator));
 
         }
         catch (Exception e)
@@ -73,6 +70,38 @@ public class CommonEvents {
             throw e;
         }
     }
+
+
+
+
+    public void selectByVisibleText (By locator, String elementName, String text )
+    {
+        try
+        {
+            Select dropdown = new Select(getElement(locator));
+            dropdown.selectByVisibleText(text);
+        }
+        catch (Exception e)
+        {
+            Report.error("Element not found: " + elementName, e);
+            throw e;
+        }
+    }
+
+    public void selectByIndex (By locator, String elementName, int index )
+    {
+        try
+        {
+            Select dropdown = new Select(getElement(locator));
+            dropdown.selectByIndex(index);
+        }
+        catch (Exception e)
+        {
+            Report.error("Element not found: " + elementName, e);
+            throw e;
+        }
+    }
+
 
     public void sendText(By locator, String elementName, String text, boolean screenshot) {
         try {
