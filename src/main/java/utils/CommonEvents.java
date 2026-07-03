@@ -8,7 +8,9 @@ import org.openqa.selenium.JavascriptExecutor;
 
 import javax.swing.*;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -204,4 +206,21 @@ public class CommonEvents {
 
 
     }
+
+    public static String getTestData(String sheetName, String testCaseName, String fieldName) {
+        // 1. Leverage ClassLoader to fetch the workbook data stream dynamically
+        try (InputStream stream = CommonEvents.class.getClassLoader().getResourceAsStream("TestData.xlsx")) {
+
+            // 2. Load the sheet memory map representation
+            Map<String, Map<String, String>> excelDataMap = DataHandler.getExcelData(stream, sheetName);
+
+            // 3. Directly target keys instantly with absolute zero loop statements!
+            return excelDataMap.get(testCaseName).get(fieldName);
+
+        } catch (Exception e) {
+            Report.error("Framework lookup failure matching Key combinations: " + testCaseName + " -> " + fieldName, e);
+            throw new RuntimeException("Excel key targeting broke! Check sheet name or spelling matches.", e);
+        }
+    }
+
 }
